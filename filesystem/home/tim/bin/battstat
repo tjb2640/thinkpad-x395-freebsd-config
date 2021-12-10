@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Pretty output wrapper for apm commands (battery stuff)
+# options:
+#  -l  :  Prints the battery percentage left
+#  -b  :  Prints a simple 10-long battery level bar using unicode block characters
+#  -t  :  Prints "Charging" if charging or time left until 0% if discharging
+#  -i  :  Fun, prints a bolt if apm -t is -1 (if charging, probably)
+
+printPercentage() {
+	printf "%d%%" "$(apm -l)"
+}
+
+printDischargeLeft() {
+	left=$(apm -t)
+	if [ $left -eq -1 ]; then
+		printf "Charging   %s" "$(printIcon)"
+	else
+		printf "%s" "$(date -r $left +"%Hh %Mm")"
+	fi
+}
+
+printBoxes() {
+	bon="█"
+	boff="░"
+	left=$(( $(( $(apm -l) + 1 )) / 10 ))
+	for i in $(seq 1 10); do
+		if [ $i -gt $left ]; then
+			printf "%s" "$boff"
+		else
+			printf "%s" "$bon"
+		fi
+	done
+}
+
+printIcon() {
+	bolt="⚡"
+	cstat=$(apm -t)
+	if [ $cstat -eq -1 ]; then
+		printf "%s" "$bolt"
+	fi
+}
+
+while getopts "lbti" opt
+do
+	case "$opt" in
+		l) printPercentage ;;
+		b) printBoxes ;;
+		t) printDischargeLeft ;;
+		i) printIcon ;;
+	esac
+done

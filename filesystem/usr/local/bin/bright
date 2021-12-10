@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# /usr/local/bin/bright
+#  (Invoked by /etc/devd/acpi_brightness.conf)
+
+# Purpose: Adjusts backlight by piping into `backlight -f amdgpu_bl00`
+# Options:
+#  -u  :  Increments $inc upwards to 100
+#  -d  :  Decrements $inc to 0
+#  -c  :  Cycles 20 upwards, resets to 0 after 100
+#  -l  :  Prints the current brightness level
+
+inc=5
+cinc=20
+lvl=$(backlight -f amdgpu_bl00 | awk '{printf $2}')
+
+commit() {
+	backlight -f amdgpu_bl00 $lvl
+}
+
+up() {
+	lvl=$(( $lvl + $inc ))
+	lvl=$(( $lvl > 100 ? 100 : $lvl ))
+	commit
+}
+
+down() {
+	lvl=$(( $lvl - $inc ))
+	lvl=$(( $lvl < 0 ? 0 : $lvl ))
+	commit
+}
+
+cycle() {
+	if [ $lvl -eq 100 ]; then
+		lvl=0
+	else
+		lvl=$(( $lvl + $cinc ))
+		lvl=$(( $lvl > 100 ? 100 : $lvl ))
+	fi
+	commit
+}
+
+while getopts "udcl" opt
+do
+	case "$opt" in
+		u) up ;;
+		d) down ;;
+		c) cycle ;;
+		l) printf "%s" "$lvl" ;;
+	esac
+done
+
+printf "Brightness: %s\\n" "$lvl"
